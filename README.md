@@ -1,5 +1,3 @@
-# web-scraping-pipeline-extract
-
 # Price Monitoring with Web Scraping and Telegram Notifications
 
 This project monitors product prices on e-commerce sites. Using web scraping techniques, the project collects prices and sends notifications on Telegram when the value reaches a specific limit defined by the user. The application is modular, divided into parts to facilitate development and maintenance.
