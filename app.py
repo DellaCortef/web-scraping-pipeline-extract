@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -14,11 +15,20 @@ def fetch_page():
 
 def parse_page(html):
     soup = BeautifulSoup(html, 'html.parser')
-    product_name  = soup.find('h1', class_ = 'ui-pdp-title').get_text(strip=True)
-    #product_price = 
-    print(product_name)
-    
+    product_name           = soup.find('h1', class_ = 'ui-pdp-title').get_text(strip=True)
+    product_price: list    = soup.find_all('span', class_ = 'andes-money-amount__fraction')
+    final_price: int       = int(product_price[0].get_text().replace(".", ""))
+    installment_price: int = int(product_price[1].get_text().replace(".", ""))
+
+    return {
+        "product_name":      product_name,
+        "final_price":       final_price,
+        "installment_price":  installment_price
+    }    
 
 if __name__ == "__main__":
-    page_content = fetch_page()
-    parse_page(page_content)
+    while True:
+        page_content = fetch_page()
+        product_info = parse_page(page_content)
+        print(product_info)
+        time.sleep(10)
