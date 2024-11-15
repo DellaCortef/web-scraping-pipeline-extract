@@ -35,7 +35,10 @@ def parse_page(html):
     final_price = int(product_price[0].get_text().replace(".", "")) if len(product_price) > 0 else None
     
     # Check if product_price has at least two elements for installment price
-    installment_price = int(product_price[1].get_text().replace(".", "")) if len(product_price) > 1 else None
+    if len(product_price) > 1:
+        installment_price = int(product_price[1].get_text().replace(".", ""))
+    else:
+        installment_price = None  # Set a default if installment price is not found
     
     # Get current time
     uptaded_at = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -123,7 +126,7 @@ async def main():
         print(f"Data {product_info} saved in the Database and CSV successfully!")
 
         # Send Telegram message with max and min prices
-        await send_telegram_message(f"The maximum price is: {max_price}, and the minimum price is: {min_price}")
+        #await send_telegram_message(f"The maximum price is: {max_price}, and the minimum price is: {min_price}")
         
         # Pause execution for 10 seconds before the next loop iteration
         await asyncio.sleep(10)
