@@ -1,13 +1,20 @@
 import os
 import time
+import asyncio
 import sqlite3
 import requests
 import pandas as pd
+from telegram import Bot
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+# Telegram bot settings
+TOKEN   = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+bot     = Bot(token=TOKEN)
 
 # creating function to request necessarily information
 def fetch_page():
@@ -67,34 +74,31 @@ def save_to_dataframe(product_info, df):
     df = pd.concat([df, new_row], ignore_index=True)
     return df
 
+# Function to save data to the database
 def save_to_database(conn, product_info):
-    """Inserts product information, including max and min prices, into the database"""
     cursor = conn.cursor()
-
-    # Get current max and min prices
     cursor.execute("SELECT MAX(final_price), MIN(final_price) FROM macbook_pro_prices")
     max_price, min_price = cursor.fetchone()
-
-    # Update max and min prices based on the new final price
     current_price = product_info['final_price']
     max_price = max(current_price, max_price or current_price)
     min_price = min(current_price, min_price or current_price)
-
-    # Add max_price and min_price to product_info dictionary
     product_info['max_price'] = max_price
     product_info['min_price'] = min_price
-
-    # Insert data into the table
     cursor.execute('''
         INSERT INTO macbook_pro_prices (product_name, final_price, installment_price, uptaded_at, max_price, min_price)
         VALUES (:product_name, :final_price, :installment_price, :uptaded_at, :max_price, :min_price)
     ''', product_info)
     conn.commit()
+    return max_price, min_price  # Return max and min prices
 
-if __name__ == "__main__":
-    # Create the database connection and set up the database
+async def send_telegram_message(text):
+    await bot.send_message(chat_id=CHAT_ID, text=text)
+
+# Main function
+async def main():
     conn = create_connection()
     setup_database(conn)
+    df = pd.DataFrame()
 
     # Initialize an empty DataFrame to store data for the CSV file
     df = pd.DataFrame()
@@ -117,6 +121,11 @@ if __name__ == "__main__":
         # Print DataFrame and confirmation message
         print(df)
         print(f"Data {product_info} saved in the Database and CSV successfully!")
+
+        # Send Telegram message with max and min prices
+        await send_telegram_message(f"The maximum price is: {max_price}, and the minimum price is: {min_price}")
         
         # Pause execution for 10 seconds before the next loop iteration
-        time.sleep(10)
+        await asyncio.sleep(10)
+
+asyncio.run(main())
